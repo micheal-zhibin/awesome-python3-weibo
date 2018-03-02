@@ -25,7 +25,7 @@ async def select(sql, args, size=None):
 	global __pool
 	with (await __pool) as conn:
 		cur = await conn.cursor(aiomysql.DictCursor)
-		await cur.excute(sql.replace('?', '%s'), args or ())
+		await cur.execute(sql.replace('?', '%s'), args or ())
 		if size:
 			rs = await cur.fetchmany(size)
 		else:
@@ -39,7 +39,7 @@ async def excute(sql, args):
 	with (await __pool) as conn:
 		try:
 			cur = await conn.cursor()
-			await cur.excute(sql.replace('?', '%s'), args)
+			await cur.execute(sql.replace('?', '%s'), args)
 			affected = cur.rowcount
 			await cur.close()
 		except BaseException as e:
@@ -97,7 +97,7 @@ class ModelMetaclass(type):
                 mappings[k] = v
                 if v.primary_key:
                     if primaryKey:
-                        raise RuntimeError('Duplicate primary key for field: %s' % s)
+                        raise RuntimeError('Duplicate primary key for field: %s' % v)
                     primaryKey = k
                 else:
                     fields.append(k)
