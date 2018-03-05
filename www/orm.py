@@ -152,7 +152,7 @@ class Model(dict, metaclass=ModelMetaclass):
         return cls(**rs[0])
 
     @classmethod
-    async def findall(cls, where=None, args=None, **kw):
+    async def findAll(cls, where=None, args=None, **kw):
         sql = [cls.__select__]
         if where:
             sql.append('where')

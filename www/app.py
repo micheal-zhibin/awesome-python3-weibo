@@ -70,7 +70,7 @@ async def response_factory(app, handler):
                 return resp
             else:
                 resp = web.Response(body=app['__templating__'].get_template(template).render(**r).encode('utf-8'))
-                resp.content_type = 'application/html;charset=utf-8'
+                resp.content_type = 'text/html;charset=utf-8'
                 return resp
         if isinstance(r, int) and r >= 100 and r < 600:
             return web.Response(r)
@@ -81,7 +81,7 @@ async def response_factory(app, handler):
         resp = web.Response(body=str(r).encode('utf-8'))
         resp.content_type = 'text/plain;charset=utf-8'
         return resp
-    return response()
+    return response
 
 def datetime_filter(t):
     delta = int(time.time() - t)
@@ -100,7 +100,7 @@ async def init(loop):
     await orm.create_pool(loop=loop, host='127.0.0.1', port=3306, user='root', password='root', db='awesome')
     app = web.Application(loop=loop, middlewares=[logger_factory, response_factory])
     init_jinja2(app, filters=dict(datetime=datetime_filter))
-    add_routes(app, 'hanlers')
+    add_routes(app, 'handlers')
     add_static(app)
     srv = await loop.create_server(app.make_handler(), '127.0.0.1', 9000)
     logging.info('server started at http://127.0.0.1:9000...')
