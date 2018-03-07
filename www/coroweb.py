@@ -80,7 +80,7 @@ class RequestHandler(object):
         kw = None
         if self._has_var_kw_arg or self._has_named_kw_args or self._required_kw_args:
             if request.method == 'POST':
-                if not request.content_Type:
+                if not request.content_type:
                     return web.HTTPBadRequest('Missing Content-type.')
                 ct = request.content_type.lower()
                 if ct.startswith('application/json'):
@@ -88,7 +88,7 @@ class RequestHandler(object):
                     if not isinstance(params, dict):
                         return web.HTTPBadRequest('JSON body must be object.')
                     kw = params
-                elif ct.startswith('application/x-www-form0urlencoded') or ct.startswith('multipart/form-data'):
+                elif ct.startswith('application/x-www-form-urlencoded') or ct.startswith('multipart/form-data'):
                     params = await request.post()
                     kw = dict(**params)
                 else:

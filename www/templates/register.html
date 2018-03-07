@@ -1,0 +1,112 @@
+{% extends '__base__.html' %}
+
+{% block title %}注册{% endblock %}
+
+{% block beforehead %}
+<script>
+    function validateEmail(email) {
+        var re = /^[a-z0-9\.\-\_]+\@[a-z0-9\-\_]+(\.[a-z0-9\-\_]+){1,4}$/
+        return re.test(email)
+    }
+
+    $(function() {
+        var vm = new Vue({
+            el: '#vm',
+            data: {
+                name: '',
+                email: '',
+                password1: '',
+                password2: '',
+                errtext: ''
+            },
+            methods: {
+                submit: function (event) {
+                    event.preventDefault()
+                    var $form = $('#vm')
+                    if (!this.name.trim()) {
+                        return this.showFormError('请输入名字')
+                    }
+                    if (!validateEmail(this.email.trim().toLowerCase())) {
+                        return this.showFormError('请输入正确的Email地址')
+                    }
+                    if (this.password1.length < 6) {
+                        return this.showFormError('密码长度至少为6个字符')
+                    }
+                    if (this.password1 != this.password2) {
+                        return this.showFormError('两次输入的米吧不一致')
+                    }
+                    var email = this.email.trim().toLowerCase()
+                    this.postJSON('/api/users', {
+                        name: this.name.trim(),
+                        email: email,
+                        passwd: CryptoJS.SHA1(email + ':' + this.password1).toString()
+                    }, function(err, r) {
+                        if (err) {
+                            return this.showFormError(err)
+                        }
+                        return location.assign('/')
+                    })
+                },
+
+                showFormError: function(err) {
+                    this.errtext = err
+                },
+
+                postJSON: function (url, option, callback) {
+                    var _ = this
+                    $.ajax({
+                        url: url,
+                        data: option,
+                        type: 'POST',
+                        complete: function (XMLHttpRequest, textStatus) {
+                            if (textStatus != 200) {
+                                _.showFormError(textStatus)
+                            } else {
+                                location.assign('/')
+                            }
+                        },
+                        contentType: 'application/x-www-form-urlencoded'
+                    })
+                }
+            }
+        })
+        $('#vm').show()
+    })
+</script>
+{% endblock %}
+
+{% block content %}
+    <div class="uk-width-2-3">
+        <h1>欢迎注册！</h1>
+        <form v-on="submit: submit" id="vm" class="uk-form uk-form-stacked">
+            <div class="uk-alert uk-alert-danger" v-if="errtext" v-html="errtext"></div>
+            <div class="uk-form-row">
+                <label class="uk-form-label">名字：</label>
+                <div class="uk-form-controls">
+                    <input type="text" v-model="name" maxlength="50" placeholder="名字" class="uk-width-1-1">
+                </div>
+            </div>
+            <div class="uk-form-row">
+                <label class="uk-form-label">电子邮件：</label>
+                <div class="uk-form-controls">
+                    <input type="text" v-model="email" maxlength="50" placeholder="your-name@example.com" class="uk-width-1-1">
+                </div>
+            </div>
+            <div class="uk-form-row">
+                <label class="uk-form-label">输入密码：</label>
+                <div class="uk-form-controls">
+                    <input type="password" v-model="password1" maxlength="50" placeholder="输入密码" class="uk-width-1-1">
+                </div>
+            </div>
+            <div class="uk-form-row">
+                <label class="uk-form-label">重复密码：</label>
+                <div class="uk-form-controls">
+                    <input type="password" v-model="password2" maxlength="50" placeholder="重复密码" class="uk-width-1-1">
+                </div>
+            </div>
+            <div class="uk-form-row">
+                <button class="uk-button uk-button-primary" type="submit"><i class="uk-icon-user"></i> 注册</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
