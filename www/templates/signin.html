@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>登录</title>
+    <link rel="stylesheet" href="/static/css/uikit.css">
+    <link rel="stylesheet" href="/static/css/uikit.gradient.css">
+    <link rel="stylesheet" href="/static/css/awesome.css">
+    <script src="/static/js/jquery.min.js"></script>
+    <script src="/static/js/uikit.min.js"></script>
+    <script src="/static/js/awesome.js"></script>
+    <script src="/static/js/vue.min.js"></script>
+    <script src="/static/js/sha1.min.js"></script>
+    <script src="/static/js/sticky.min.js"></script>
+</head>
+<body>
+<script>
+    function _httpJSON(method, url, data, callback) {
+        var opt = {
+            type: method,
+            dataType: 'json'
+        }
+        if (method == 'GET') {
+            opt.url = url + '?' + data
+        }
+        if (method == 'POST') {
+            opt.url = url;
+            opt.data = JSON.stringify(data || {})
+            opt.contentType = 'application/json'
+        }
+        $.ajax(opt).done(function (r) {
+            if (r && r.error) {
+                return callback(r)
+            }
+            return callback(null, r)
+        }).fail(function (jqXHR, textStatus) {
+            return callback({'error': 'http_bad_response', 'data': '' + jqXHR.status, 'message': '网络好像出现问题了（HTTP ' + jqXHR.status + '）'})
+        })
+    }
+
+    $(function () {
+        var vm = new Vue({
+            el:'#vm',
+            data: {
+                email: '',
+                password: '',
+                errtext: ''
+            },
+            methods: {
+                submit: function (event) {
+                    event.preventDefault()
+                    var _ = this;
+                    var $form = $('#vm').find('form');
+                    this.postJSON('/api/authenticate', {
+                        email: this.email,
+                        passwd: this.password
+                    }, function (err, r) {
+                        if (err) {
+                            console.log(err)
+                            _.showFormError(err.message)
+                        } else {
+                            return location.assign('/')
+                        }
+                    })
+                },
+
+                showFormError: function(err) {
+                    this.errtext = err
+                },
+
+                postJSON: function (url, data, callback) {
+                    var _ = this
+                    _httpJSON('POST', url ,data, callback)
+                }
+            }
+        })
+
+        $('#vm').show()
+    })
+</script>
+
+    <div class="uk-width-2-3">
+        <h1>欢迎登录</h1>
+        <form v-on="submit: submit" id="vm" class="uk-form uk-form-stacked">
+            <div class="uk-alert uk-alert-danger" v-show="errtext" v-html="errtext"></div>
+            <div class="uk-form-row">
+                <label class="uk-form-label">电子邮件：</label>
+                <div class="uk-form-controls">
+                    <input type="text" v-model="email" maxlength="50" placeholder="your-name@example.com" class="uk-width-1-1">
+                </div>
+            </div>
+            <div class="uk-form-row">
+                <label class="uk-form-label">输入密码：</label>
+                <div class="uk-form-controls">
+                    <input type="password" v-model="password" maxlength="50" placeholder="输入密码" class="uk-width-1-1">
+                </div>
+            </div>
+            <div class="uk-form-row">
+                <button class="uk-button uk-button-primary" type="submit"><i class="uk-icon-user"></i> 登录</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

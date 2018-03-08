@@ -1,5 +1,5 @@
 import time, re, hashlib, json, logging
-from apis import APIError, APIValueError, APIResourceNotFoundError, APIPermissionError
+from apis import APIError, APIValueError, APIResourceNotFoundError, APIPermissionError, Page
 from coroweb import get, post
 
 from aiohttp import web
@@ -44,6 +44,16 @@ def check_admin(request):
     if request.__user__ is None or not request.__user__.admin:
         raise APIPermissionError()
 
+def get_page_index(page_str):
+    p = 1
+    try:
+        p = int(page_str)
+    except ValueError as e:
+        pass
+    if p < 1:
+        p = 1;
+    return p;
+
 
 @get('/')
 async def index(request):
@@ -60,6 +70,21 @@ async def register(request):
         '__template__': 'register.html'
     }
 
+@get('/signin')
+async def register(request):
+    return  {
+        '__template__': 'signin.html'
+    }
+
+
+@get('/signout')
+async def signout(request):
+    referer = request.headers.get('Referer')
+    r = web.HTTPFound(referer or '/')
+    r.set_cookie(COOKIE_NAME, '-delete-', max_age=0, httponly=True)
+    logging.info('user signed out.')
+    return r
+
 @get('/manage/blogs/create')
 async def createblogs(request):
     return  {
@@ -67,18 +92,6 @@ async def createblogs(request):
         'id': '',
         'action': '/api/blogs'
     }
-
-# @get('/api/users')
-# async def api_get_users(*, page='1'):
-#     page_index = get_page_index(page)
-#     num = await User.findNumber('count(id)')
-#     p = Page(num, page_index)
-#     if num == 0:
-#         return dict(page=p, users=())
-#     users = await User.findAll(orderBy='created_at desc', limit=(p.offset, p.limit))
-#     for u in users:
-#         u.passwd = '******'
-#     return dict(page=p, users=users)
 
 _RE_EMAIL = re.compile(r'^[a-z0-9\.\-\_]+\@[a-z0-9\-\_]+(\.[a-z0-9\-\_]+){1,4}$')
 _RE_SHA1 = re.compile(r'^[0-9a-f]{40}$')
@@ -148,3 +161,20 @@ async def api_create_blog(request, *, name, summary, content):
     blog = Blog(user_id=request.__user__.id, user_name=request.__user__.name, user_image=request.__user__.image, name=name.strip(), summary=summary.strip(), content=content.strip())
     await blog.save()
     return blog
+
+@get('/api/blogs')
+async def api_blogs(*, page="1"):
+    page_index = get_page_index(page)
+    num = await Blog.findNumber('count(id)')
+    p = Page(num, page_index)
+    if num == 0:
+        return dict(page=p, blogs=())
+    blogs = await Blog.findAll(orderBy='created_at desc', limit=(p.offset, p.limit))
+    return dict(page=p, blogs=blogs)
+
+@get('/manage/blogs')
+async def manage_blogs(*, page="1"):
+    return {
+        '__template__': 'manage_blogs.html',
+        'page_index': get_page_index(page)
+    }
