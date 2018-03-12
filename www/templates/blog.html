@@ -1,0 +1,195 @@
+{% extends '__base__.html' %}
+
+{% block title %}{{ blog.name }}{% endblock %}
+
+{% block beforehead %}
+<script>
+
+    var commenturl = '/api/blogs/{{ blog.id }}/comments',
+        blogid = '{{ blog.id }}',
+        userid = '{{ blog.user_id }}',
+        htmlcomment = document.createElement('p')
+    $(htmlcomment).html('{{comments}}')
+
+    var comments = JSON.parse($(htmlcomment).text())
+
+    function _httpJSON(method, url, data, callback) {
+        var opt = {
+            type: method,
+            dataType: 'json'
+        }
+        if (method == 'GET') {
+            opt.url = url + '?' + data
+        }
+        if (method == 'POST') {
+            opt.url = url;
+            opt.data = JSON.stringify(data || {})
+            opt.contentType = 'application/json'
+        }
+        $.ajax(opt).done(function (r) {
+            if (r && r.error) {
+                return callback(r)
+            }
+            return callback(null, r)
+        }).fail(function (jqXHR, textStatus) {
+            return callback({'error': 'http_bad_response', 'data': '' + jqXHR.status, 'message': '网络好像出现问题了（HTTP ' + jqXHR.status + '）'})
+        })
+    }
+
+
+    function _display_error($obj, err) {
+        if ($obj.is(':visible')) {
+            $obj.hide();
+        }
+        var msg = err.message || String(err);
+        var L = ['<div class="uk-alert uk-alert-danger">'];
+        L.push('<p>Error: ');
+        L.push(msg);
+        L.push('</p><p>Code: ');
+        L.push(err.error || '500');
+        L.push('</p></div>');
+        $obj.html(L.join('')).slideDown();
+    }
+
+    function initVM() {
+        var vm = new Vue({
+            el:'#vm',
+            data: {
+                user_id: userid,
+                id: blogid,
+                content: '',
+                comments: comments
+            },
+            methods: {
+                edit_blogs: function (blog) {
+                    location.assign('/manage/blogs/edit?id=' + blog.id)
+                },
+
+                create_comment: function (event) {
+                    event.preventDefault()
+                    var _ = this;
+                    var $form = $('#vm').find('#form-comment');
+                    this.postJSON(commenturl, {
+                        id: _.id,
+                        content: _.content
+                    }, function (err, r) {
+                        if (err) {
+                            _.showFormError(err)
+                        } else {
+                            return location.assign('/blog/' + blogid)
+                        }
+                    })
+                },
+
+                showFormError: function(err) {
+                    this.errtext = err
+                },
+
+                postJSON: function (url, data, callback) {
+                    var _ = this
+                    _httpJSON('POST', url ,data, callback)
+                },
+
+                formatTime: function (time) {
+                    var time = new Date(time * 1000)
+                    return time.getFullYear() + '.' + (time.getMonth() + 1) + '.' + time.getDate()
+                }
+            }
+        })
+
+        $('#vm').show()
+    }
+
+    $(function () {
+        initVM()
+    })
+</script>
+{% endblock %}
+
+{% block content %}
+    <div class="uk-width-1-1 uk-margin-bottom">
+        <div class="uk-panel uk-panel-box">
+            <ul class="uk-breadcrumb">
+                <li><a href="/manage/comments">评论</a></li>
+                <li><a href="/manage/blogs">日志</a></li>
+                <li><a href="/manage/users">用户</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="error" class="uk-width-1-1"></div>
+
+    <!--<div id="vm" class="uk-width-1-1">-->
+        <div id="vm" class="uk-width-medium-3-4">
+            <article class="uk-article">
+                <h2>{{ blog.name }}</h2>
+                <p class="uk-article-meta">发表于{{ blog.created_at|datetime }}</p>
+                <p>{{ blog.html_content|safe }}</p>
+            </article>
+
+            <hr class="uk-article-divider">
+
+        {% if __user__ %}
+            <h3>发表评论</h3>
+
+            <article class="uk-comment">
+                <header class="uk-comment-header">
+                    <img src="{{ __user__.image }}" alt="" class="uk-comment-avater uk-border-circle" width="50" height="50">
+                    <h4 class="uk-comment-title">{{ __user__.name }}</h4>
+                </header>
+                <div class="uk-comment-body">
+                    <form id="form-comment" class="uk-form">
+                        <div class="uk-form-row">
+                            <textarea v-model="content" placeholder="说点什么吧" rows="6" style="width: 100%;resize: none;"></textarea>
+                        </div>
+                        <div class="uk-form-row">
+                            <button @click="create_comment" class="uk-button uk-button-primary" type="submit"><i class="uk-icon-comment"> 发表评论</i></button>
+                        </div>
+                    </form>
+                </div>
+            </article>
+
+            <hr class="uk-article-divider">
+        {% endif %}
+
+            <h3>最新评论</h3>
+
+            <ul class="uk-comment-list">
+                <li v-for="comment in comments" v-if="comments">
+                    <article class="uk-comment">
+                        <header class="uk-comment-header">
+                            <img :src="comment.user_image" alt="" class="uk-comment-avater uk-border-circle" width="50" height="50">
+                            <h4 class="uk-comment-title" v-html="comment.user_name + (comment.user_id == user_id ? '(作者)' : '')"></h4>
+                            <p class="uk-comment-meta" v-html="formatTime(comment.created_at || datetime)"></p>
+                        </header>
+                        <div class="uk-comment-body">
+                            <p v-html="comment.content"></p>
+                        </div>
+                    </article>
+                </li>
+                <p v-else>还没有人评论...</p>
+            </ul>
+        </div>
+
+        <div class="uk-width-medium-1-4">
+            <div class="uk-panel uk-panel-box">
+                <div class="uk-text-center">
+                    <img src="{{ blog.user_image }}" alt="" class="uk-border-circle">
+                    <h3>{{ blog.user_name }}</h3>
+                </div>
+            </div>
+            <div class="uk-panel uk-panel-header">
+                <h3 class="uk-panel-title">友情链接</h3>
+                <ul class="uk-list uk-list-line">
+                    <li><i class="uk-icon-link"></i> <a href="#">编程</a></li>
+                    <li><i class="uk-icon-link"></i> <a href="#">思考</a></li>
+                    <li><i class="uk-icon-link"></i> <a href="#">读书</a></li>
+                </ul>
+            </div>
+        </div>
+    <!--</div>-->
+
+
+
+        <!--<div v-component="pagination" v-with="page"></div>-->
+{% endblock %}

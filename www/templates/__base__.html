@@ -10,7 +10,7 @@
     <script src="/static/js/jquery.min.js"></script>
     <script src="/static/js/uikit.min.js"></script>
     <script src="/static/js/awesome.js"></script>
-    <script src="/static/js/vue.min.js"></script>
+    <script src="/static/js/vue.js"></script>
     <script src="/static/js/sha1.min.js"></script>
     <script src="/static/js/sticky.min.js"></script>
     {% block beforehead %}<!-- before head -->{% endblock %}
@@ -26,8 +26,8 @@
             </ul>
             <div class="uk-navbar-flip">
                 <ul class="uk-navbar-nva">
-                {% if user%}
-                    <li><a href="javascript:void(0)"><i class="uk-icon-user"></i> {{ user.name }}</a></li>
+                {% if __user__%}
+                    <li><a href="javascript:void(0)"><i class="uk-icon-user"></i> {{ __user__.name }}</a></li>
                     <li><a href="/signout"><i class="uk-icon-sign-out"></i> 登出</a></li>
                 {% else %}
                     <li><a href="/signin"><i class="uk-icon-sign-in"></i> 登录</a></li>

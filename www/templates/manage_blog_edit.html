@@ -31,6 +31,7 @@
     }
 
     function initVM(blog) {
+        blog.errtext = ''
         var vm = new Vue({
             el:'#vm',
             data: blog,
@@ -43,7 +44,7 @@
                         if (err) {
                             _.showFormError(err)
                         } else {
-                            return location.assign('/api/blogs/' + r.id)
+                            return location.assign('/manage/blogs')
                         }
                     })
                 },
@@ -64,7 +65,7 @@
 
     $(function () {
         if (ID) {
-            _httpJSON('GET', '/api/blogs/' + ID, function (err, blog) {
+            _httpJSON('GET', '/api/blogs/' + ID, '', function (err, blog) {
                 if (err) {
                     return fatal(err)
                 }
@@ -101,7 +102,7 @@
     </div>
 
     <div id="vm" class="uk-width-2-3">
-        <form v-on="submit: submit" class="uk-form uk-form-stacked">
+        <form @submit="submit" class="uk-form uk-form-stacked">
             <div class="uk-alert uk-alert-danger uk-hidden" v-html="errtext" v-if="errtext"></div>
             <div class="uk-form-row">
                 <label class="uk-form-label">标题：</label>
